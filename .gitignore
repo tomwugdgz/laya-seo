@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+
+# 虚拟环境（.venv_old_* 是重建 venv 时留下的旧环境，约 3.5GB）
+.venv/
+.venv*/
+venv/
+
+# 密钥：绝不入库
+.env
+.env.*
+!.env.example
+
+# 审计报告：保留 laya-seo-reports/ 作为产出样例（Tom 指定）。
+# 注意：报告含被审计站点的完整数据（页面清单、行动项、站点结构），
+# 若要对外分享，请先确认其中内容可公开。
+# 单独跑出的临时报告可用下面的规则手动排除：
+#   laya-seo-reports/2026-10-04-*/
+# 旧目录名（早期版本输出位置）不再使用
+jev-seo-reports/
+
+# 渲染中间产物
+*.log
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
