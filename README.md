@@ -472,7 +472,7 @@ bin\layaseo.cmd render <dir> --formats md,xlsx --lang both
 规则 ID 覆盖 `checks.RULES` 52 条 + `score.JEV_RULES` 14 条 + `score.DFS_RULES` 6 条
 + PageSpeed 2 条 = **74 条，无遗漏**。
 
-> 踩过的坑：第一批词条是**猜**出来的 key，36/72 对不上,
+> 踩过的坑：第一批词条是**猜**出来的 key，36/72 对不上，
 > 导致中文报告里一半的发现标题默默回退英文。现在所有 key 都从代码里枚举导出，
 > 不再手写。
 
