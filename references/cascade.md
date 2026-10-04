@@ -152,4 +152,4 @@ overall 86-88 / 100
 | `jevseo/jev.py` | 端点可配置、2 题一批串行、422 退避 |
 | `jevseo/cli.py` | `judge_cascade()` / `_judge_laya_only()` / `_shrink_for_laya()` |
 | `jevseo/score.py` | `_engine_label()` 报告口径如实标注引擎来源 |
-| `tests/test_cascade.py` | 52 个离线用例，覆盖上述全部决策逻辑 |
+| `tests/test_cascade.py` | 55 个离线用例，覆盖上述全部决策逻辑 |

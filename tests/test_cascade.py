@@ -579,5 +579,69 @@ class TestEngineLabel(unittest.TestCase):
         self.assertEqual(_engine_label(judged), "semantic judgment")
 
 
+class TestDoctorSurvivesBrokenDeps(unittest.TestCase):
+    """doctor 必须报告坏掉的依赖，而不是跟着坏掉。
+
+    真机发现的：WeasyPrint 装得好好的，但系统缺 Pango DLL，
+    于是 `import weasyprint` 抛的是 OSError（不是 ImportError），
+    直接把整个 doctor 命令带崩——体检工具自己死了，最没用的一种死法。
+    """
+
+    _LAYA_OK = {"runtime": "ok", "weights": "ok", "device": "cuda",
+                "torch": "2.14.1+cu130", "gpu": "fake", "model_dir": "x", "reason": None}
+
+    def _doctor_report(self, boom_module, exc):
+        import builtins
+        import io
+        import sys
+        import types
+        from contextlib import redirect_stdout
+
+        from jevseo import cli
+
+        real_import = builtins.__import__
+
+        def fake_import(name, *a, **kw):
+            if name == boom_module:
+                raise exc
+            return real_import(name, *a, **kw)
+
+        # 真 WeasyPrint 在这台机器上 import 时会往 stdout 打一段警告横幅，
+        # 会把 json.loads 弄崩。非测试目标时先用桩模块占位。
+        seeded = boom_module != "weasyprint" and "weasyprint" not in sys.modules
+        if seeded:
+            sys.modules["weasyprint"] = types.ModuleType("weasyprint")
+        # 密钥是否存在不应影响这些用例的结论
+        no_secret = mock.patch("jevseo.env.secret", lambda _name: None)
+        buf = io.StringIO()
+        try:
+            with mock.patch.object(builtins, "__import__", side_effect=fake_import), \
+                    mock.patch("jevseo.laya.doctor", return_value=dict(self._LAYA_OK)), \
+                    no_secret:
+                with redirect_stdout(buf):
+                    cli.doctor(None)
+        finally:
+            if seeded:
+                del sys.modules["weasyprint"]
+        return json.loads(buf.getvalue())
+
+    def test_oserror_at_import_is_reported_not_fatal(self):
+        rep = self._doctor_report("weasyprint", OSError("cannot load library 'libgobject-2.0-0'"))
+        self.assertTrue(rep["weasyprint"].startswith("broken"), rep["weasyprint"])
+        self.assertIn("unavailable", rep["pdf"])
+        # 其它包不能被拖累
+        self.assertEqual(rep["requests"], "ok")
+
+    def test_importerror_is_still_missing(self):
+        rep = self._doctor_report("jinja2", ImportError("no module", name="jinja2"))
+        self.assertTrue(rep["jinja2"].startswith("missing"), rep["jinja2"])
+
+    def test_laya_still_reported_alongside_broken_pdf(self):
+        rep = self._doctor_report("weasyprint", OSError("nope"))
+        self.assertEqual(rep["laya"]["runtime"], "ok")
+        self.assertEqual(rep["available_modes"], ["laya"])
+        self.assertEqual(rep["recommended"], "offline")
+
+
 if __name__ == "__main__":
     unittest.main()

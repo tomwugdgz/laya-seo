@@ -10,7 +10,9 @@
 layaseo run https://duckwolf.cn --max-pages 12 --max-depth 3 --no-psi --formats md,xlsx --lang both
 ```
 
-**结果**：78/100（B 级），31 个行动项，抓取 13 个 URL / 7 个 HTML 页面。
+**结果**：78/100（B 级），30 个行动项，抓取 13 个 URL（7 个 HTML 页面 + 6 个跳转）。
+评分分区：content 57 / ai 71 / onpage 76 / crawl 81 / links 91 / structured 91 /
+performance 93 / security 94（visibility 未评分，需要 `--full` 的 DataForSEO 数据）。
 
 ## 文件说明
 
@@ -37,6 +39,12 @@ layaseo run https://duckwolf.cn --max-pages 12 --max-depth 3 --no-psi --formats 
 `--lang both` 的一次真实运行里，5 页全部升级 Jev、Laya 定案 0 页
 （Discuz 页面普遍偏薄，Laya 置信度不足）。这正是级联设计要防的情况：
 **本地模型不够确信时，就交给权威模型。**
+
+这次运行还真实命中了供应商配额问题：Jev 15 次请求中 **4 次被 422
+`token_budget_exceeded` 拒绝**，被拒的页面退回 Laya 兜底，
+所以 `Engine` 列最终是 `Laya (fallback) 3 / Jev cloud 2`。
+这恰好演示了兜底路径的价值——**宁可给标注过的低置信结果，也不留空**。
+`audit.json` 的 `jev.ledger.jev_api.errors` 里有完整的 422 原文。
 
 ## 为什么没有 PDF
 

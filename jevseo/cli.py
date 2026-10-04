@@ -523,6 +523,13 @@ def doctor(_args) -> None:
             report[mod] = "ok"
         except ImportError as err:
             report[mod] = f"missing ({err.name})"
+        except Exception as err:  # noqa: BLE001
+            # WeasyPrint 在缺 Pango/GLib 时会以 OSError 炸在 import 期，
+            # 不是 ImportError。doctor 的职责是「报告坏掉」，不是「跟着坏掉」。
+            report[mod] = f"broken ({type(err).__name__}: {str(err).strip().splitlines()[-1][:160]})"
+
+    # PDF 是否能出，取决于 WeasyPrint 是否真的可用
+    report["pdf"] = "available" if report.get("weasyprint") == "ok" else "unavailable: md and xlsx are unaffected"
 
     # Laya 只探测运行时与权重，不加载 600MB 权重
     lz = laya_doctor()
@@ -557,7 +564,7 @@ def main(argv=None) -> None:
 
     def audit_opts(p):
         p.add_argument("url")
-        p.add_argument("--out", help="output directory (default ./jev-seo-reports/<domain>-<stamp>)")
+        p.add_argument("--out", help="output directory (default ./laya-seo-reports/<domain>-<stamp>)")
         p.add_argument("--max-pages", type=int, default=60)
         p.add_argument("--max-depth", type=int, default=5)
         p.add_argument("--time-budget", type=int, default=600, help="crawl time budget in seconds")

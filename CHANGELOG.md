@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.1.2 (2026-10-05) — laya-seo fork
+
+Cascade: local Laya discriminative model as a confidence gate in front of Jev.
+
+- Added `--cascade {laya-first,jev-first,offline}`. `laya-first` (default) asks Laya
+  first and only escalates a page to Jev when the page-weighted confidence misses
+  `--laya-page-accept` (default 0.80). Judgment results keep the upstream shape, so
+  score / report / xlsx / md layers are unchanged.
+- Only `choice` primitives count toward acceptance. `score` and `noul` confidence was
+  measured to be inconsistent with Laya's actual answer (a `noul=0.297` "no" reported
+  confidence 0.703), and including them pinned the savings rate at 0%.
+- Page state sent to Laya is trimmed to 1800 chars of body text, 12 outline items and
+  8 CTAs (`cli.py:_shrink_for_laya`); `STATE_TOKEN_LIMIT` raised 900 to 2000. Chinese
+  pages measured 1000-1546 tokens at 6000 chars and were all blocked before this.
+- Jev client now batches 2 questions per request, serially with a 1.1s pause, at page
+  concurrency 2, with a `TEXT_STEPS` retry ladder. Needed because relay providers return
+  `HTTP 422 token_budget_exceeded` against an account-cumulative quota: `counted_tokens`
+  was constant regardless of how many questions were sent.
+- Jev refusals fall back to Laya's raw answers tagged `laya_fallback=True`, so a page is
+  never silently missing.
+- Relay endpoints are configurable: `JEV_API_BASE` and `JEV_MODEL` override the official
+  `https://api.typesafe.ai/v1/systemone` + `jev-latest`.
+- Reports can be rendered in Chinese from one `audit.json`: `--lang {en,zh,both}`.
+  Translation happens in the render layer, so both languages share every number.
+  `jevseo/i18n.py` holds 74/74 rule translations and 228 vocabulary entries.
+  Workbook sheet names stay English because Chinese names break `COUNTIF` references silently.
+- Added an `Engine` column to the workbook's `Semantic judgments` sheet and an engine
+  disclosure section to the Markdown report, so every judgment can be traced to
+  `Jev cloud` / `Laya local` / `Laya (fallback)` / `Rule` / `code`.
+- `jev_api` failures and request counts are now surfaced in `digest.md` instead of being lost.
+- Added `docs/USER-MANUAL.md` and rewrote `README.md` as its index.
+- Tests: 55 offline cascade cases added (`tests/test_cascade.py`); no weights, keys or spend.
+- Fixed: `doctor` no longer crashes when WeasyPrint is installed but its Pango DLLs are missing. It reports `broken (OSError: ...)` plus `pdf: unavailable` instead of dying.
+
 ## 0.1.1 (2026-09-22)
 
 Found by a clean-machine test (fresh clone, empty home folder, no keys):
